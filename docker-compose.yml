@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  go-db:
+    image: postgres:latest
+    container_name: postgres-go-db
+    environment:
+      POSTGRES_USER: go-user
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: go-example-db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge
