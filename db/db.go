@@ -5,15 +5,12 @@ import (
 	"fmt"
 
 	"entgo.io/ent/dialect"
+	"example.com/go-api-test/config"
 	"example.com/go-api-test/ent"
 	"go.uber.org/fx"
 )
 
-type Config struct {
-	DSN string
-}
-
-func NewEntClient(lc fx.Lifecycle, cfg Config) (*ent.Client, error) {
+func NewEntClient(lc fx.Lifecycle, cfg *config.Config) (*ent.Client, error) {
 	client, err := ent.Open(dialect.Postgres, cfg.DSN)
 
 	if err != nil {

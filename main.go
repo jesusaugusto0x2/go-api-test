@@ -1,23 +1,26 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
+	"example.com/go-api-test/config"
 	"example.com/go-api-test/db"
 	"example.com/go-api-test/server"
 
+	"github.com/joho/godotenv"
 	"go.uber.org/fx"
 )
 
 func initApp() *fx.App {
-	cfg := db.Config{
-		DSN: "postgres://go-user:123456@localhost:5433/go-example-db?sslmode=disable",
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found or could not be loaded; using system environment variables.")
 	}
 
 	app := fx.New(
 		fx.Provide(
-			func() db.Config { return cfg },
+			config.NewConfig,
 			db.NewEntClient,
 			server.SetupRouter,
 		),
@@ -37,7 +40,7 @@ func initApp() *fx.App {
 func main() {
 	app := initApp()
 
-	if err := app.Start(nil); err != nil {
+	if err := app.Start(context.Background()); err != nil {
 		log.Fatal(err)
 	}
 }

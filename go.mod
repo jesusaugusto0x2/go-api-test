@@ -5,6 +5,7 @@ go 1.23.4
 require (
 	entgo.io/ent v0.14.1
 	github.com/go-chi/chi/v5 v5.1.0
+	github.com/joho/godotenv v1.5.1
 	go.uber.org/fx v1.23.0
 )
 
