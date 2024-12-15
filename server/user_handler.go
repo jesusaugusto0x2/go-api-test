@@ -58,6 +58,12 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.CreateUser(r.Context(), input)
 
 	if err != nil {
+
+		if err == service.ErrEmailAlreadyExists {
+			http.Error(w, "User with the same email already exists", http.StatusBadRequest)
+			return
+		}
+
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
 	}
 

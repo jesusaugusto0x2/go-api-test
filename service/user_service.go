@@ -26,5 +26,17 @@ func (s *userService) GetUsers(ctx context.Context) ([]*ent.User, error) {
 }
 
 func (s *userService) CreateUser(ctx context.Context, input input.CreateUserInput) (*ent.User, error) {
+
+	// Check if user with the same email already exists
+	existingUser, err := s.repo.GetUserByEmail(ctx, input.Email)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if existingUser != nil {
+		return nil, ErrEmailAlreadyExists
+	}
+
 	return s.repo.CreateUser(ctx, input)
 }
