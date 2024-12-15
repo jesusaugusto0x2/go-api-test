@@ -11,6 +11,7 @@ import (
 type UserService interface {
 	GetUsers(ctx context.Context) ([]*ent.User, error)
 	CreateUser(ctx context.Context, input input.CreateUserInput) (*ent.User, error)
+	GetUser(ctx context.Context, id int) (*ent.User, error)
 }
 
 type userService struct {
@@ -39,4 +40,18 @@ func (s *userService) CreateUser(ctx context.Context, input input.CreateUserInpu
 	}
 
 	return s.repo.CreateUser(ctx, input)
+}
+
+func (s *userService) GetUser(ctx context.Context, id int) (*ent.User, error) {
+	user, err := s.repo.GetUserByID(ctx, id)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, ErrUserNotFound
+		}
+
+		return nil, err
+	}
+
+	return user, nil
 }

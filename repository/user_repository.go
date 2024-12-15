@@ -12,6 +12,7 @@ type UserRepository interface {
 	GetAll(ctx context.Context) ([]*ent.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*ent.User, error)
 	CreateUser(ctx context.Context, input input.CreateUserInput) (*ent.User, error)
+	GetUserByID(ctx context.Context, id int) (*ent.User, error)
 }
 
 type userRepository struct {
@@ -42,4 +43,8 @@ func (r *userRepository) CreateUser(ctx context.Context, input input.CreateUserI
 		SetName(input.Name).
 		SetEmail(input.Email).
 		Save(ctx)
+}
+
+func (r *userRepository) GetUserByID(ctx context.Context, id int) (*ent.User, error) {
+	return r.client.User.Query().Where(user.IDEQ(id)).Only(ctx)
 }

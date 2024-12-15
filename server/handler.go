@@ -20,6 +20,7 @@ func SetupRouter(lc fx.Lifecycle, client *ent.Client) http.Handler {
 
 	r.Get("/users", userHandler.GetUsers)
 	r.Post("/users", userHandler.CreateUser)
+	r.Get("/users/{id}", userHandler.GetUser)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
