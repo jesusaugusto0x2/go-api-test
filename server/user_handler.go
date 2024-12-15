@@ -62,7 +62,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 
 		if err == service.ErrEmailAlreadyExists {
-			http.Error(w, "User with the same email already ", http.StatusBadRequest)
+			http.Error(w, "Email already in use", http.StatusConflict)
 			return
 		}
 
@@ -91,6 +91,47 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.Error(w, "Failed to fetch user", http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	var input input.UpdateUserInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if input.Name == nil && input.Email == nil {
+		http.Error(w, "No fields to update", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.userService.UpdateUser(r.Context(), id, input)
+
+	if err != nil {
+		if err == service.ErrEmailAlreadyExists {
+			http.Error(w, "Email already in use", http.StatusConflict)
+			return
+		}
+
+		if err == service.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

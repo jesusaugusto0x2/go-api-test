@@ -13,6 +13,7 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*ent.User, error)
 	CreateUser(ctx context.Context, input input.CreateUserInput) (*ent.User, error)
 	GetUserByID(ctx context.Context, id int) (*ent.User, error)
+	UpdateUser(ctx context.Context, id int, input input.UpdateUserInput) (*ent.User, error)
 }
 
 type userRepository struct {
@@ -47,4 +48,17 @@ func (r *userRepository) CreateUser(ctx context.Context, input input.CreateUserI
 
 func (r *userRepository) GetUserByID(ctx context.Context, id int) (*ent.User, error) {
 	return r.client.User.Query().Where(user.IDEQ(id)).Only(ctx)
+}
+
+func (r *userRepository) UpdateUser(ctx context.Context, id int, input input.UpdateUserInput) (*ent.User, error) {
+	update := r.client.User.UpdateOneID(id)
+
+	if input.Name != nil {
+		update.SetName(*input.Name)
+	}
+	if input.Email != nil {
+		update.SetEmail(*input.Email)
+	}
+
+	return update.Save(ctx)
 }
