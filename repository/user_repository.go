@@ -14,6 +14,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, input input.CreateUserInput) (*ent.User, error)
 	GetUserByID(ctx context.Context, id int) (*ent.User, error)
 	UpdateUser(ctx context.Context, id int, input input.UpdateUserInput) (*ent.User, error)
+	DeleteUserByID(ctx context.Context, id int) error
 }
 
 type userRepository struct {
@@ -61,4 +62,10 @@ func (r *userRepository) UpdateUser(ctx context.Context, id int, input input.Upd
 	}
 
 	return update.Save(ctx)
+}
+
+func (r *userRepository) DeleteUserByID(ctx context.Context, id int) error {
+	return r.client.User.
+		DeleteOneID(id).
+		Exec(ctx)
 }

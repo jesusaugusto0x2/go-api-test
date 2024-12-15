@@ -60,13 +60,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.CreateUser(r.Context(), input)
 
 	if err != nil {
-
 		if err == service.ErrEmailAlreadyExists {
 			http.Error(w, "Email already in use", http.StatusConflict)
 			return
 		}
 
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -136,4 +136,27 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
+}
+
+func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	err = h.userService.DeleteUser(r.Context(), id)
+
+	if err != nil {
+		if err == service.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

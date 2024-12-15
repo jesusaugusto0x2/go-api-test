@@ -12,8 +12,8 @@ type UserService interface {
 	GetUsers(ctx context.Context) ([]*ent.User, error)
 	CreateUser(ctx context.Context, input input.CreateUserInput) (*ent.User, error)
 	GetUser(ctx context.Context, id int) (*ent.User, error)
-	UpdateUser(ctx context.Context, id int, input input.UpdateUserInput) (*ent.User, error) // Nuevo método
-
+	UpdateUser(ctx context.Context, id int, input input.UpdateUserInput) (*ent.User, error)
+	DeleteUser(ctx context.Context, id int) error
 }
 
 type userService struct {
@@ -72,4 +72,17 @@ func (s *userService) UpdateUser(ctx context.Context, id int, input input.Update
 	}
 
 	return s.repo.UpdateUser(ctx, id, input)
+}
+
+func (s *userService) DeleteUser(ctx context.Context, id int) error {
+	_, err := s.repo.GetUserByID(ctx, id)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	return s.repo.DeleteUserByID(ctx, id)
 }
