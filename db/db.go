@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/dialect"
 	"example.com/go-api-test/config"
 	"example.com/go-api-test/ent"
+	_ "github.com/lib/pq"
 	"go.uber.org/fx"
 )
 
