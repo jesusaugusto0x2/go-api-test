@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -25,13 +25,12 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userService.GetUsers(ctx)
 
 	if err != nil {
-		log.Printf("Error getting users: %v", err)
-		http.Error(w, "Error getting users", http.StatusInternalServerError)
+		msg, status := buildErrorResponse(err)
+		http.Error(w, msg, status)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	respondJSON(w, http.StatusOK, users)
 }
 
 type CreateUserRequest struct {
@@ -43,12 +42,12 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var payload CreateUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		http.Error(w, ErrInvalidPayloadMsg, http.StatusBadRequest)
 		return
 	}
 
 	if payload.Name == "" || payload.Email == "" {
-		http.Error(w, "Name and email are required", http.StatusBadRequest)
+		http.Error(w, ErrNoFieldsToUpdateMsg, http.StatusBadRequest)
 		return
 	}
 
@@ -60,103 +59,110 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.CreateUser(r.Context(), input)
 
 	if err != nil {
-		if err == service.ErrEmailAlreadyExists {
-			http.Error(w, "Email already in use", http.StatusConflict)
-			return
-		}
-
-		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		msg, status := buildErrorResponse(err)
+		http.Error(w, msg, status)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	respondJSON(w, http.StatusCreated, user)
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idParam)
+	id, err := parseIDParam(r)
 
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		http.Error(w, ErrInvalidUserIDMsg, http.StatusBadRequest)
 		return
 	}
 
 	user, err := h.userService.GetUser(r.Context(), id)
 
 	if err != nil {
-		if err == service.ErrUserNotFound {
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
-		}
-
-		http.Error(w, "Failed to fetch user", http.StatusInternalServerError)
+		msg, status := buildErrorResponse(err)
+		http.Error(w, msg, status)
+		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	respondJSON(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idParam)
+	id, err := parseIDParam(r)
 
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		http.Error(w, ErrInvalidUserIDMsg, http.StatusBadRequest)
 		return
 	}
 
 	var input input.UpdateUserInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		http.Error(w, ErrInvalidPayloadMsg, http.StatusBadRequest)
 		return
 	}
 
 	if input.Name == nil && input.Email == nil {
-		http.Error(w, "No fields to update", http.StatusBadRequest)
+		http.Error(w, ErrInvalidPayloadMsg, http.StatusBadRequest)
 		return
 	}
 
 	user, err := h.userService.UpdateUser(r.Context(), id, input)
 
 	if err != nil {
-		if err == service.ErrEmailAlreadyExists {
-			http.Error(w, "Email already in use", http.StatusConflict)
-			return
-		}
-
-		if err == service.ErrUserNotFound {
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
-		}
-
-		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		msg, status := buildErrorResponse(err)
+		http.Error(w, msg, status)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	respondJSON(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idParam)
+	id, err := parseIDParam(r)
 
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		http.Error(w, ErrInvalidUserIDMsg, http.StatusBadRequest)
 		return
 	}
 
 	err = h.userService.DeleteUser(r.Context(), id)
 
 	if err != nil {
-		if err == service.ErrUserNotFound {
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
+		msg, status := buildErrorResponse(err)
+		http.Error(w, msg, status)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// Private functions
+func parseIDParam(r *http.Request) (int, error) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
+
+	if err != nil {
+		return -1, fmt.Errorf("invalid user id param")
+	}
+
+	return id, nil
+}
+
+func buildErrorResponse(err error) (string, int) {
+	switch err {
+	case service.ErrEmailAlreadyExists:
+		return "Email already in use", http.StatusConflict
+	case service.ErrUserNotFound:
+		return "User not found", http.StatusNotFound
+	default:
+		return "Internal server error", http.StatusInternalServerError
+	}
+}
+
+func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	}
 }

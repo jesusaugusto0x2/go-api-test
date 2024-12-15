@@ -18,11 +18,11 @@ func SetupRouter(lc fx.Lifecycle, client *ent.Client) http.Handler {
 	userService := service.NewUserService(userRepo)
 	userHandler := NewUserHandler(userService)
 
-	r.Get("/users", userHandler.GetUsers)
-	r.Post("/users", userHandler.CreateUser)
-	r.Get("/users/{id}", userHandler.GetUser)
-	r.Patch("/users/{id}", userHandler.UpdateUser)
-	r.Delete("/users/{id}", userHandler.DeleteUser)
+	r.Get(RouteUsers, userHandler.GetUsers)
+	r.Post(RouteUsers, userHandler.CreateUser)
+	r.Get(RouteUsersWithIDParam, userHandler.GetUser)
+	r.Patch(RouteUsersWithIDParam, userHandler.UpdateUser)
+	r.Delete(RouteUsersWithIDParam, userHandler.DeleteUser)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
